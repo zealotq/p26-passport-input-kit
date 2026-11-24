@@ -19,6 +19,8 @@ This daemon bypasses keyd entirely:
         z                    ->  ESC
         b n m                ->  , . ?   (m = Shift+slash)
         c v x                ->  Ctrl+C / Ctrl+V / Ctrl+X
+        h                    ->  Ctrl+A (select all)
+        j                    ->  save screenshot to ~/图片 (D-Bus, one key press)
         g                    ->  F5
         l                    ->  toggle on-screen keyboard (squeekboard)
         k                    ->  toggle touchpad arrow forwarding ON/OFF
@@ -96,7 +98,7 @@ KEY_LEFTSHIFT, KEY_SLASH = 42, 53
 KEY_UP, KEY_LEFT, KEY_RIGHT, KEY_DOWN = 103, 105, 106, 108
 KEY_F5 = 63
 KEY_Q, KEY_P = 16, 25
-KEY_A, KEY_K, KEY_L = 30, 37, 38
+KEY_A, KEY_H, KEY_J, KEY_K, KEY_L = 30, 35, 36, 37, 38
 KEY_X, KEY_C, KEY_V = 45, 46, 47
 KEY_Z, KEY_M = 44, 50
 
@@ -107,6 +109,7 @@ KEY_Z, KEY_M = 44, 50
 # action (not a key sequence) and fires once on key-down.
 OSK_TOGGLE = object()
 TOUCH_TOGGLE = object()
+SCREENSHOT = object()
 
 LAYER_MAP = {
     # first row -> digits 1..0
@@ -134,6 +137,8 @@ LAYER_MAP = {
     46: ("C+C", (KEY_LEFTCTRL, KEY_C)),      # c -> Ctrl+C
     47: ("C+V", (KEY_LEFTCTRL, KEY_V)),      # v -> Ctrl+V
     45: ("C+X", (KEY_LEFTCTRL, KEY_X)),      # x -> Ctrl+X
+    35: ("C+A", (KEY_LEFTCTRL, KEY_A)),      # h -> Ctrl+A (select all)
+    36: ("SHOT", SCREENSHOT),                # j -> save screenshot via D-Bus
     34: ("F5",  (KEY_F5,)),                  # g -> F5
     38: ("OSK", OSK_TOGGLE),                 # l -> show/hide squeekboard
     37: ("TPAD", TOUCH_TOGGLE),              # k -> touchpad arrows ON/OFF
@@ -145,7 +150,7 @@ KEY_NAMES = {
     16: "q", 17: "w", 18: "e", 19: "r", 20: "t",
     21: "y", 22: "u", 23: "i", 24: "o", 25: "p",
     30: "a", 31: "s", 32: "d", 33: "f", 34: "g",
-    37: "k", 38: "l",
+    35: "h", 36: "j", 37: "k", 38: "l",
     44: "z", 45: "x", 46: "c", 47: "v", 48: "b", 49: "n", 50: "m",
 }
 
@@ -277,6 +282,40 @@ def _osk_gdbus(method_args, timeout=2.0):
            "--dest", "sm.puri.OSK0", "--object-path", "/sm/puri/OSK0",
            "--method"] + list(method_args)
     return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+
+
+def take_screenshot():
+    """Save a full-screen PNG to the droidian user's ~/图片 on SPACE+J.
+
+    Uses org.gnome.Shell.Screenshot.Screenshot(false, false, path) on the
+    user's session bus, so a single key press produces a file immediately
+    (Phosh's Print binding would only open the interactive screenshot UI).
+    """
+    try:
+        uid = pwd.getpwnam("droidian").pw_uid
+        picdir = "/home/droidian/图片"
+        os.makedirs(picdir, exist_ok=True)
+        try:
+            os.chown(picdir, uid, uid)
+        except OSError:
+            pass
+        stamp = time.strftime("%Y%m%d_%Hh%Mm%Ss")
+        path = os.path.join(picdir, "P26_%s.png" % stamp)
+        cmd = ["/usr/bin/sudo", "-n", "-u", "droidian", "/usr/bin/env",
+               "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%d/bus" % uid,
+               "/usr/bin/gdbus", "call", "--session",
+               "--dest", "org.gnome.Shell.Screenshot",
+               "--object-path", "/org/gnome/Shell/Screenshot",
+               "--method", "org.gnome.Shell.Screenshot.Screenshot",
+               "false", "false", path]
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        if res.returncode != 0:
+            raise RuntimeError(res.stderr.strip() or "Screenshot failed")
+        if "true" not in res.stdout:
+            raise RuntimeError(res.stdout.strip() or "Screenshot returned false")
+        log("screenshot saved -> %s" % path)
+    except Exception as e:
+        log("screenshot failed: %r" % e)
 
 
 def toggle_osk():
@@ -446,6 +485,9 @@ def main():
                             touch_enabled = not touch_enabled
                             save_touch_enabled(args.touch_state, touch_enabled)
                             log("touchpad arrows -> %s" % ("ON" if touch_enabled else "OFF"))
+                    elif action is SCREENSHOT:
+                        if value == 1:  # fire once on key-down
+                            take_screenshot()
                     else:
                         emit_seq(out, action, value)
                 else:

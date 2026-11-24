@@ -70,7 +70,10 @@ fcitx5 → WowType → 应用
   release 时补发普通空格，打字不受影响。
 - **组合键顺序**：`emit_seq()` 按正序 press、逆序 release，修饰键最后松开，避免
   `Ctrl+C` 变成 `Ctrl` 与 `C` 错序。
-- **动作型键**：软键盘开关（空格+L）只在按下时触发一次 D-Bus 调用，不发键码。
+- **动作型键**：软键盘开关（空格+L）、截图（空格+J）只在按下时触发一次 D-Bus 调用，不发键码。
+  截图调用 `org.gnome.Shell.Screenshot.Screenshot(false, false, path)`，一步把当前屏幕存为
+  `~/图片/P26_YYYYmmdd_HhHmMsS.png`。没有采用 Print 键，因为 Phosh 把 Print 绑定到
+  `show-screenshot-ui`，按一下只弹出截图界面、还需再点一次确认；D-Bus 方式按一下立即存文件。
 - **越权 D-Bus**：桥接是 root，直连 droidian 用户总线会被拒；须用
   `sudo -n -u droidian env DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/<uid>/bus gdbus ...`。
 - **keyd 冲突**：keyd 的 `[ids] *` 会抢抓本项目创建的 uinput 虚拟键盘，故 service 里

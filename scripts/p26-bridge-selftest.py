@@ -480,7 +480,39 @@ def main():
         except OSError:
             pass
 
-        results = (ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11)
+        # --- case 12: SPACE+h -> Ctrl+A; SPACE+j -> D-Bus screenshot -------
+        # j is an action key: it must NOT inject any keycode (it calls the
+        # screenshot D-Bus method instead). Verify via the virtual keyboard.
+        ok12 = None
+        try:
+            time.sleep(0.2)
+            drain(out_fd, 0.1)
+            inject(fake, 57, 1)          # space down
+            time.sleep(0.30)             # > hold -> layer on
+            inject(fake, 35, 1)          # h down -> Ctrl+A
+            inject(fake, 35, 0)          # h up
+            got_h = drain(out_fd, 0.4)
+            inject(fake, 57, 0)          # space up
+            time.sleep(0.1)
+
+            drain(out_fd, 0.1)
+            inject(fake, 57, 1)          # space down again
+            time.sleep(0.30)             # > hold -> layer on
+            inject(fake, 36, 1)          # j down -> SCREENSHOT action
+            inject(fake, 36, 0)          # j up
+            got_j = drain(out_fd, 0.5)
+            inject(fake, 57, 0)          # space up
+            print("case12 h events:", got_h, "| j events:", got_j, flush=True)
+            select_all = [(29, 1), (30, 1), (30, 0), (29, 0)]
+            # j must inject nothing at all (no raw 'j' code 36, no other key)
+            ok12 = (got_h == select_all and not got_j)
+        except Exception as e:
+            print("case12 ERROR: %r" % e, flush=True)
+            ok12 = False
+        print("case12:", "PASS" if ok12 else "FAIL", flush=True)
+
+        results = (ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11,
+                   ok12)
         return 0 if all(x is not False for x in results) else 1
     finally:
         if out_fd is not None:
