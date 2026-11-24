@@ -123,10 +123,18 @@ def main():
     fake_ev = find_event_by_name("P26-test-source")
     print("fake source:", fake_ev, flush=True)
 
+    # Use an isolated state file so the self-test never touches the real
+    # touchpad switch state on a device.
+    touch_state_path = "/tmp/p26-selftest-touchpad-enabled"
+    try:
+        os.unlink(touch_state_path)
+    except OSError:
+        pass
+
     # Let bridge logs inherit stdout so failures are visible in real time.
     proc = subprocess.Popen(
         [sys.executable, bridge, "--input", fake_ev, "--label", "p26-test-out",
-         "--hold", "0.15"])
+         "--hold", "0.15", "--touch-state", touch_state_path])
 
     out_fd = None
     try:
@@ -432,7 +440,47 @@ def main():
         print("case10:", ("PASS" if ok10 else "FAIL") if ok10 is not None else "SKIP",
               flush=True)
 
-        results = (ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10)
+        # --- case 11: SPACE+K toggles the persisted touchpad switch --------
+        def press_k_layer():
+            inject(fake, 57, 1)          # space down
+            time.sleep(0.30)             # > hold -> layer on
+            inject(fake, 37, 1)          # k down -> TOUCH_TOGGLE
+            inject(fake, 37, 0)          # k up
+            time.sleep(0.10)             # allow state file write
+            inject(fake, 57, 0)          # space up
+
+        def read_state():
+            try:
+                with open(touch_state_path, encoding="ascii") as f:
+                    return f.read().strip()
+            except OSError:
+                return "<missing>"
+
+        ok11 = None
+        try:
+            time.sleep(0.2)
+            drain(out_fd, 0.1)
+            before = read_state()
+            press_k_layer()
+            drained = drain(out_fd, 0.2)
+            after1 = read_state()
+            press_k_layer()
+            drain(out_fd, 0.2)
+            after2 = read_state()
+            print("case11 state %s -> %s -> %s; leaked=%s" %
+                  (before, after1, after2, drained), flush=True)
+            ok11 = (before in ("1", "<missing>") and after1 == "0" and
+                    after2 == "1" and (37, 1) not in drained)
+        except Exception as e:
+            print("case11 ERROR: %r" % e, flush=True)
+            ok11 = False
+        print("case11:", "PASS" if ok11 else "FAIL", flush=True)
+        try:
+            os.unlink(touch_state_path)
+        except OSError:
+            pass
+
+        results = (ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11)
         return 0 if all(x is not False for x in results) else 1
     finally:
         if out_fd is not None:

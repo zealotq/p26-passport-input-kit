@@ -21,15 +21,17 @@ This daemon bypasses keyd entirely:
         c v x                ->  Ctrl+C / Ctrl+V / Ctrl+X
         g                    ->  F5
         l                    ->  toggle on-screen keyboard (squeekboard)
+        k                    ->  toggle touchpad arrow forwarding ON/OFF
         backspace            ->  Ctrl+Shift+Space (WowType 中/英 toggle)
     (all mappings apply ONLY inside the hold-SPACE layer; plain typing is
      untouched. digit row per user request 2026-11-24.)
   * tap SPACE -> ordinary space, so normal typing is unaffected
   * (optional, --touch-name) grab touch_kbd and forward its arrow-key pulses
-    (KEY_UP/DOWN/LEFT/RIGHT) straight to the virtual keyboard, ALWAYS active
-    (no need to hold SPACE). libinput/phoc must NOT own touch_kbd: keep the
-    91-p26-touchpad-off.rules IGNORE so only this bridge reads it. This gives
-    a real "touchpad as arrow keys" without a virtual pointer or a seat0 hack.
+    (KEY_UP/DOWN/LEFT/RIGHT) straight to the virtual keyboard (no need to hold
+    SPACE). ON by default; hold SPACE + K toggles forwarding ON/OFF. libinput/
+    phoc must NOT own touch_kbd: keep the 91-p26-touchpad-off.rules IGNORE so
+    only this bridge reads it. This gives a real "touchpad as arrow keys"
+    without a virtual pointer or a seat0 hack.
 
 Requires root (EVIOCGRAB + /dev/uinput). Intended to run as systemd
 service p26-digit-bridge.service.
@@ -94,7 +96,7 @@ KEY_LEFTSHIFT, KEY_SLASH = 42, 53
 KEY_UP, KEY_LEFT, KEY_RIGHT, KEY_DOWN = 103, 105, 106, 108
 KEY_F5 = 63
 KEY_Q, KEY_P = 16, 25
-KEY_A, KEY_L = 30, 38
+KEY_A, KEY_K, KEY_L = 30, 37, 38
 KEY_X, KEY_C, KEY_V = 45, 46, 47
 KEY_Z, KEY_M = 44, 50
 
@@ -104,6 +106,7 @@ KEY_Z, KEY_M = 44, 50
 # layer; all other keys are forwarded verbatim. OSK_TOGGLE is a special
 # action (not a key sequence) and fires once on key-down.
 OSK_TOGGLE = object()
+TOUCH_TOGGLE = object()
 
 LAYER_MAP = {
     # first row -> digits 1..0
@@ -133,6 +136,7 @@ LAYER_MAP = {
     45: ("C+X", (KEY_LEFTCTRL, KEY_X)),      # x -> Ctrl+X
     34: ("F5",  (KEY_F5,)),                  # g -> F5
     38: ("OSK", OSK_TOGGLE),                 # l -> show/hide squeekboard
+    37: ("TPAD", TOUCH_TOGGLE),              # k -> touchpad arrows ON/OFF
     # backspace -> WowType ToggleKey (Ctrl+Shift+Space) for zh/en switch
     14: ("DEL", (KEY_LEFTCTRL, KEY_LEFTSHIFT, KEY_SPACE)),
 }
@@ -141,7 +145,7 @@ KEY_NAMES = {
     16: "q", 17: "w", 18: "e", 19: "r", 20: "t",
     21: "y", 22: "u", 23: "i", 24: "o", 25: "p",
     30: "a", 31: "s", 32: "d", 33: "f", 34: "g",
-    38: "l",
+    37: "k", 38: "l",
     44: "z", 45: "x", 46: "c", 47: "v", 48: "b", 49: "n", 50: "m",
 }
 
@@ -162,6 +166,24 @@ IDLE, PENDING, SYM = 0, 1, 2
 
 def log(msg):
     print("p26-digit-bridge: " + str(msg), flush=True)
+
+
+def load_touch_enabled(path):
+    """Persisted touchpad-arrow switch: ON unless the state file says '0'."""
+    try:
+        with open(path, encoding="ascii") as f:
+            return f.read().strip() != "0"
+    except OSError:
+        return True
+
+
+def save_touch_enabled(path, enabled):
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="ascii") as f:
+            f.write("1\n" if enabled else "0\n")
+    except OSError as e:
+        log("touchpad switch persist failed: %r" % e)
 
 
 def find_event(name):
@@ -284,6 +306,8 @@ def main():
                     help="touchpad device name to forward arrow keys from (default: touch_kbd; empty to disable)")
     ap.add_argument("--no-touch", action="store_true",
                     help="disable touchpad arrow forwarding entirely")
+    ap.add_argument("--touch-state", default="/var/lib/p26-digit-bridge/touchpad-enabled",
+                    help="persist file for the SPACE+K touchpad switch (1=on, 0=off)")
     args = ap.parse_args()
 
     source = args.input or find_event(args.name)
@@ -318,6 +342,9 @@ def main():
     running = True
     state = IDLE
     deadline = 0.0
+    touch_enabled = load_touch_enabled(args.touch_state)
+    if touch is not None:
+        log("touchpad arrows ON" if touch_enabled else "touchpad arrows OFF (SPACE+K to enable)")
 
     def stop(_signum, _frame):
         nonlocal running
@@ -344,7 +371,8 @@ def main():
                 log("select failed: %r" % e)
                 break
 
-            # Touchpad: forward arrow-key pulses verbatim, always active.
+            # Touchpad: drain its fd every wake (so the buffer never fills),
+            # but only inject the arrow pulses while the SPACE+K switch is ON.
             if touch is not None and touch in readable:
                 try:
                     tdata = os.read(touch, EVENT_SIZE)
@@ -353,7 +381,8 @@ def main():
                 except OSError as e:
                     log("touchpad read failed: %r" % e)
                     tdata = b""
-                forward_touch_data(out, tdata, ARROW_KEYS)
+                if touch_enabled:
+                    forward_touch_data(out, tdata, ARROW_KEYS)
 
             if not readable:
                 # Timeout (no fd ready). Hold-timeout is handled at loop top.
@@ -412,6 +441,11 @@ def main():
                     if action is OSK_TOGGLE:
                         if value == 1:  # fire once on key-down
                             toggle_osk()
+                    elif action is TOUCH_TOGGLE:
+                        if value == 1:  # fire once on key-down
+                            touch_enabled = not touch_enabled
+                            save_touch_enabled(args.touch_state, touch_enabled)
+                            log("touchpad arrows -> %s" % ("ON" if touch_enabled else "OFF"))
                     else:
                         emit_seq(out, action, value)
                 else:

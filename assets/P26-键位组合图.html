@@ -41,6 +41,7 @@
   .k-ctrl .map { color: #93c5fd; font-size: 15px; }
   .k-fkey .map { color: #fdba74; font-size: 17px; }
   .k-osk  .map { color: #f9a8d4; font-size: 16px; }
+  .k-tpad .map { color: #fcd34d; font-size: 15px; }
   .k-pass .map { color: #6b7280; font-size: 13px; font-weight: 500; }
 
   .funcs { display: flex; justify-content: center; gap: 14px; margin-bottom: 22px; }
@@ -71,8 +72,8 @@
   <header>
     <h1>Zinwa P26 · Droidian 键位组合图</h1>
     <div class="sub">黑莓 Passport 实体键盘 · 按住<strong>空格</strong> 0.2 秒进入符号层，松开退出；轻点空格仍是普通空格</div>
-    <div class="badge">符号层：q..p=1..0 · c/v/x=剪贴板 · g=F5 · l=软键盘</div>
-    <div class="badge2">状态：bridge active · WowType 中文 zh · 触摸板方向键随时可用 · 灵敏度 600/350</div>
+    <div class="badge">符号层：q..p=1..0 · c/v/x=剪贴板 · g=F5 · k=触控板开关 · l=软键盘</div>
+    <div class="badge2">状态：bridge active · WowType 中文 zh · 触摸板方向键默认开（空格+k 关） · 灵敏度 600/350</div>
   </header>
 
   <div class="section-title">物理三排键盘 <span>每键：字母 / 符号层输出 · 底部小字为 evdev 键码</span></div>
@@ -97,7 +98,7 @@
       <div class="key k-fkey"><div class="letter">G</div><div class="map">F5</div><div class="code">34</div></div>
       <div class="key k-pass"><div class="letter">H</div><div class="map">原样</div><div class="code">35</div></div>
       <div class="key k-pass"><div class="letter">J</div><div class="map">原样</div><div class="code">36</div></div>
-      <div class="key k-pass"><div class="letter">K</div><div class="map">原样</div><div class="code">37</div></div>
+      <div class="key k-tpad"><div class="letter">K</div><div class="map">TPAD</div><div class="code">37</div></div>
       <div class="key k-osk"><div class="letter">L</div><div class="map">OSK</div><div class="code">38</div></div>
     </div>
     <div class="row">
@@ -127,8 +128,9 @@
         <b>Esc</b>：按住空格 + <b>z</b>　<b>标点</b>：按住空格 + <b>b n m</b>（，。？）<br>
         <b>剪贴板</b>：按住空格 + <b>c / v / x</b>（Ctrl+C / Ctrl+V / Ctrl+X）<br>
         <b>F5 刷新</b>：按住空格 + <b>g</b>　<b>软键盘开关</b>：按住空格 + <b>l</b><br>
+        <b>触控板开关</b>：按住空格 + <b>k</b>（默认开，状态持久化，无需重启）<br>
         <b>中英切换</b>：按住空格 + <b>退格</b>（WowType zh ↔ en）<br>
-        <b>触摸板</b>：直接滑动 = 方向键，随时可用，无需按空格；灵敏度 600/350。<br>
+        <b>触摸板</b>：开关打开时直接滑动 = 方向键，无需按空格；灵敏度 600/350。<br>
         不按空格时所有键原样输出，正常打字不受影响。
       </p>
     </div>
@@ -142,11 +144,13 @@
         <div class="lg"><span class="dot" style="background:#93c5fd"></span>Ctrl+C/V/X</div>
         <div class="lg"><span class="dot" style="background:#fdba74"></span>F5</div>
         <div class="lg"><span class="dot" style="background:#f9a8d4"></span>软键盘</div>
+        <div class="lg"><span class="dot" style="background:#fcd34d"></span>触控板开关</div>
         <div class="lg"><span class="dot" style="background:#fde68a"></span>层触发</div>
       </div>
       <p style="margin-top:10px">
         桥接：<b>event2 → uinput → fcitx5 → WowType</b>；空格+L 经 <b>D-Bus → squeekboard</b> 翻转 Visible。<br>
-        触摸板 <b>常驻 grab 后透传 EV_KEY 方向键脉冲</b>（103/105/106/108），无鼠标事件、不动 seat0。<br>
+        触摸板 <b>常驻 grab 后透传 EV_KEY 方向键脉冲</b>（103/105/106/108），无鼠标事件、不动 seat0；空格+K 只翻转状态、不注入键码。<br>
+        开关持久化到 <b>/var/lib/p26-digit-bridge/touchpad-enabled</b>（1=开/0=关，删文件恢复默认开）。<br>
         灵敏度由 <b>93-p26-touchpad-sensitivity.rules 持久化</b>（450/250 → 600/350）。<br>
         实体键盘仅 29 键，无数字键 / Alt / Shift / SYM；222 为幽灵键码，从未真实发出。
       </p>
@@ -154,7 +158,7 @@
   </div>
 
   <footer>
-    <span>更新时间：2026-11-24 14:36 · 数据源：docs/KEYMAP.md · docs/SOLUTION.md</span>
+    <span>更新时间：2026-11-24 14:52 · 数据源：docs/KEYMAP.md · docs/SOLUTION.md</span>
     <span>Zinwa P26 / Droidian · evdev → uinput 桥接方案</span>
   </footer>
 </div>
