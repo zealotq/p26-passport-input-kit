@@ -1,0 +1,3 @@
+# P26: 屏蔽键盘触摸层(touch_kbd/event5)对 libinput 的暴露，治打字误触光标乱跳
+# 该规则为设备原有配置，本项目未修改，保留在此仅供完整复现。
+ACTION=="add|change", KERNEL=="event*", ATTRS{name}=="touch_kbd", ENV{LIBINPUT_IGNORE_DEVICE}="1"

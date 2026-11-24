@@ -1,0 +1,18 @@
+[Unit]
+Description=P26 Passport keyboard digit bridge (evdev -> uinput)
+# keyd's [ids] * would grab the virtual keyboard this service creates and
+# also cannot manage the real P26 keyboard (no digit keys -> dropped by
+# resolve_device_capabilities). They must not run together.
+Conflicts=keyd.service
+After=systemd-udevd.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/p26-digit-bridge.py
+Restart=on-failure
+RestartSec=2
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

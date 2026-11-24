@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1240px; background: #eef2f7;
+    font-family: "Noto Sans CJK SC", "Droid Sans Fallback", sans-serif;
+    color: #1f2937; padding: 32px;
+  }
+  .card { background: #fff; border-radius: 20px; padding: 34px 40px 30px;
+          box-shadow: 0 8px 30px rgba(30,41,59,.12); }
+  header { border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 24px; }
+  h1 { font-size: 33px; font-weight: 800; color: #111827; letter-spacing: .5px; }
+  .sub { margin-top: 8px; font-size: 16px; color: #4b5563; }
+  .badge { display: inline-block; margin-top: 14px; padding: 6px 14px; border-radius: 999px;
+           background: #fef3c7; color: #92400e; font-size: 14px; font-weight: 700; }
+  .badge2 { display: inline-block; margin: 14px 0 0 10px; padding: 6px 14px; border-radius: 999px;
+           background: #dbeafe; color: #1e40af; font-size: 14px; font-weight: 700; }
+
+  .section-title { font-size: 18px; font-weight: 800; color: #374151; margin: 4px 0 14px; }
+  .section-title span { font-size: 13px; font-weight: 500; color: #9ca3af; margin-left: 10px; }
+
+  .rows { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 14px;
+          padding: 18px 10px; margin-bottom: 22px; }
+  .row { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+
+  .key { width: 88px; height: 86px; border-radius: 10px; background: #1f2937;
+         box-shadow: 0 4px 0 #111827, 0 6px 12px rgba(0,0,0,.18);
+         display: flex; flex-direction: column; align-items: center; justify-content: center;
+         color: #f9fafb; position: relative; }
+  .key .letter { font-size: 22px; font-weight: 800; line-height: 1; }
+  .key .map { font-size: 19px; font-weight: 800; line-height: 1.1; margin-top: 7px; }
+  .key .code { position: absolute; bottom: 5px; font-size: 10px; color: #9ca3af; font-weight: 500; }
+  .k-num  .map { color: #7dd3fc; }
+  .k-dir  .map { color: #86efac; font-size: 17px; }
+  .k-esc  .map { color: #fca5a5; }
+  .k-punc .map { color: #d8b4fe; }
+  .k-ctrl .map { color: #93c5fd; font-size: 15px; }
+  .k-fkey .map { color: #fdba74; font-size: 17px; }
+  .k-osk  .map { color: #f9a8d4; font-size: 16px; }
+  .k-pass .map { color: #6b7280; font-size: 13px; font-weight: 500; }
+
+  .funcs { display: flex; justify-content: center; gap: 14px; margin-bottom: 22px; }
+  .fkey { height: 88px; border-radius: 12px; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; position: relative; }
+  .fkey .t { font-size: 19px; font-weight: 800; }
+  .fkey .d { font-size: 13px; font-weight: 600; margin-top: 6px; }
+  .fkey .c { position: absolute; bottom: 6px; font-size: 10px; opacity: .75; }
+  .f-back { width: 250px; background: #fed7aa; color: #9a3412; box-shadow: 0 4px 0 #fdba74; }
+  .f-space { width: 400px; background: #fde68a; color: #78350f;
+             box-shadow: 0 4px 0 #fcd34d, 0 0 0 3px #f59e0b; }
+  .f-enter { width: 250px; background: #e5e7eb; color: #4b5563; box-shadow: 0 4px 0 #d1d5db; }
+
+  .bottom { display: flex; gap: 18px; }
+  .panel { flex: 1; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; }
+  .panel h3 { font-size: 15px; font-weight: 800; color: #374151; margin-bottom: 10px; }
+  .panel p { font-size: 13.5px; line-height: 1.9; color: #4b5563; }
+  .panel b { color: #0f172a; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 4px; }
+  .lg { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4b5563; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  footer { margin-top: 20px; padding-top: 14px; border-top: 1px solid #e5e7eb;
+           font-size: 12px; color: #9ca3af; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="card">
+  <header>
+    <h1>Zinwa P26 · Droidian 键位组合图</h1>
+    <div class="sub">黑莓 Passport 实体键盘 · 按住<strong>空格</strong> 0.2 秒进入符号层，松开退出；轻点空格仍是普通空格</div>
+    <div class="badge">符号层：q..p=1..0 · c/v/x=剪贴板 · g=F5 · l=软键盘</div>
+    <div class="badge2">状态：bridge active · WowType 中文 zh · 触摸板方向键随时可用 · 灵敏度 600/350</div>
+  </header>
+
+  <div class="section-title">物理三排键盘 <span>每键：字母 / 符号层输出 · 底部小字为 evdev 键码</span></div>
+  <div class="rows">
+    <div class="row">
+      <div class="key k-num"><div class="letter">Q</div><div class="map">1</div><div class="code">16</div></div>
+      <div class="key k-num"><div class="letter">W</div><div class="map">2</div><div class="code">17</div></div>
+      <div class="key k-num"><div class="letter">E</div><div class="map">3</div><div class="code">18</div></div>
+      <div class="key k-num"><div class="letter">R</div><div class="map">4</div><div class="code">19</div></div>
+      <div class="key k-num"><div class="letter">T</div><div class="map">5</div><div class="code">20</div></div>
+      <div class="key k-num"><div class="letter">Y</div><div class="map">6</div><div class="code">21</div></div>
+      <div class="key k-num"><div class="letter">U</div><div class="map">7</div><div class="code">22</div></div>
+      <div class="key k-num"><div class="letter">I</div><div class="map">8</div><div class="code">23</div></div>
+      <div class="key k-num"><div class="letter">O</div><div class="map">9</div><div class="code">24</div></div>
+      <div class="key k-num"><div class="letter">P</div><div class="map">0</div><div class="code">25</div></div>
+    </div>
+    <div class="row">
+      <div class="key k-dir"><div class="letter">A</div><div class="map">↑</div><div class="code">30</div></div>
+      <div class="key k-dir"><div class="letter">S</div><div class="map">↓</div><div class="code">31</div></div>
+      <div class="key k-dir"><div class="letter">D</div><div class="map">←</div><div class="code">32</div></div>
+      <div class="key k-dir"><div class="letter">F</div><div class="map">→</div><div class="code">33</div></div>
+      <div class="key k-fkey"><div class="letter">G</div><div class="map">F5</div><div class="code">34</div></div>
+      <div class="key k-pass"><div class="letter">H</div><div class="map">原样</div><div class="code">35</div></div>
+      <div class="key k-pass"><div class="letter">J</div><div class="map">原样</div><div class="code">36</div></div>
+      <div class="key k-pass"><div class="letter">K</div><div class="map">原样</div><div class="code">37</div></div>
+      <div class="key k-osk"><div class="letter">L</div><div class="map">OSK</div><div class="code">38</div></div>
+    </div>
+    <div class="row">
+      <div class="key k-esc"><div class="letter">Z</div><div class="map">Esc</div><div class="code">44</div></div>
+      <div class="key k-ctrl"><div class="letter">X</div><div class="map">Ctrl+X</div><div class="code">45</div></div>
+      <div class="key k-ctrl"><div class="letter">C</div><div class="map">Ctrl+C</div><div class="code">46</div></div>
+      <div class="key k-ctrl"><div class="letter">V</div><div class="map">Ctrl+V</div><div class="code">47</div></div>
+      <div class="key k-punc"><div class="letter">B</div><div class="map">，</div><div class="code">48</div></div>
+      <div class="key k-punc"><div class="letter">N</div><div class="map">。</div><div class="code">49</div></div>
+      <div class="key k-punc"><div class="letter">M</div><div class="map">？</div><div class="code">50</div></div>
+    </div>
+  </div>
+
+  <div class="section-title">功能键 <span>在符号层内的特殊作用</span></div>
+  <div class="funcs">
+    <div class="fkey f-back"><div class="t">⌫ 退格</div><div class="d">Ctrl+Shift+Space → 中/英切换</div><div class="c">keycode 14</div></div>
+    <div class="fkey f-space"><div class="t">SPACE 空格（层触发键）</div><div class="d">按住 0.2s 进入符号层 · 轻点 = 普通空格</div><div class="c">keycode 57</div></div>
+    <div class="fkey f-enter"><div class="t">⏎ 回车</div><div class="d">原样转发 Enter</div><div class="c">keycode 28</div></div>
+  </div>
+
+  <div class="bottom">
+    <div class="panel">
+      <h3>常用操作</h3>
+      <p>
+        <b>sudo 密码</b>：按住空格 + <b>q..p</b> 数字层，输入你自己的口令<br>
+        <b>方向键</b>：按住空格 + <b>a s d f</b>（↑ ↓ ← →）<br>
+        <b>Esc</b>：按住空格 + <b>z</b>　<b>标点</b>：按住空格 + <b>b n m</b>（，。？）<br>
+        <b>剪贴板</b>：按住空格 + <b>c / v / x</b>（Ctrl+C / Ctrl+V / Ctrl+X）<br>
+        <b>F5 刷新</b>：按住空格 + <b>g</b>　<b>软键盘开关</b>：按住空格 + <b>l</b><br>
+        <b>中英切换</b>：按住空格 + <b>退格</b>（WowType zh ↔ en）<br>
+        <b>触摸板</b>：直接滑动 = 方向键，随时可用，无需按空格；灵敏度 600/350。<br>
+        不按空格时所有键原样输出，正常打字不受影响。
+      </p>
+    </div>
+    <div class="panel">
+      <h3>颜色图例 / 底层实现</h3>
+      <div class="legend">
+        <div class="lg"><span class="dot" style="background:#7dd3fc"></span>数字 1–0</div>
+        <div class="lg"><span class="dot" style="background:#86efac"></span>方向键</div>
+        <div class="lg"><span class="dot" style="background:#fca5a5"></span>Esc</div>
+        <div class="lg"><span class="dot" style="background:#d8b4fe"></span>标点</div>
+        <div class="lg"><span class="dot" style="background:#93c5fd"></span>Ctrl+C/V/X</div>
+        <div class="lg"><span class="dot" style="background:#fdba74"></span>F5</div>
+        <div class="lg"><span class="dot" style="background:#f9a8d4"></span>软键盘</div>
+        <div class="lg"><span class="dot" style="background:#fde68a"></span>层触发</div>
+      </div>
+      <p style="margin-top:10px">
+        桥接：<b>event2 → uinput → fcitx5 → WowType</b>；空格+L 经 <b>D-Bus → squeekboard</b> 翻转 Visible。<br>
+        触摸板 <b>常驻 grab 后透传 EV_KEY 方向键脉冲</b>（103/105/106/108），无鼠标事件、不动 seat0。<br>
+        灵敏度由 <b>93-p26-touchpad-sensitivity.rules 持久化</b>（450/250 → 600/350）。<br>
+        实体键盘仅 29 键，无数字键 / Alt / Shift / SYM；222 为幽灵键码，从未真实发出。
+      </p>
+    </div>
+  </div>
+
+  <footer>
+    <span>更新时间：2026-11-24 14:36 · 数据源：docs/KEYMAP.md · docs/SOLUTION.md</span>
+    <span>Zinwa P26 / Droidian · evdev → uinput 桥接方案</span>
+  </footer>
+</div>
+</body>
+</html>

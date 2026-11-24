@@ -1,0 +1,4 @@
+# P26 touch_kbd arrow sensitivity (2026-11-24).
+# Threshold default: x=450 y=250. Higher value = longer swipe needed = less sensitive.
+# User asked for slightly lower sensitivity after arrow-key forwarding became active.
+ACTION=="add|change", SUBSYSTEM=="input", ATTR{name}=="touch_kbd", ATTR{key_x_threshold}="600", ATTR{key_y_threshold}="350"
